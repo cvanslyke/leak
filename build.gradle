@@ -1,0 +1,37 @@
+version = 1.0
+
+apply plugin: 'eclipse'
+apply plugin: 'java'
+apply plugin: 'groovy'
+
+ext {
+    groovy_version = "2.4.3"
+    logback_version = "1.1.2"
+}
+ 
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.codehaus.groovy:groovy-all:${groovy_version}"
+    compile "org.apache.commons:commons-math3:3.2"
+    compile "ch.qos.logback:logback-classic:${logback_version}"
+    compile "org.slf4j:jcl-over-slf4j:1.7.7"
+    testCompile "org.spockframework:spock-core:0.7-groovy-2.0"
+}
+
+def dependencyFilesDir = new File("$buildDir/dependency")
+
+task mkDir << {
+    dependencyFilesDir.mkdirs()
+}
+
+task copyDeps(type: Copy, dependsOn: mkDir) {
+    from configurations.runtime
+    into dependencyFilesDir
+    outputs.upToDateWhen { false }
+}
+
+build.dependsOn copyDeps
