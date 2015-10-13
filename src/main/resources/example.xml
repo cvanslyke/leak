@@ -1,0 +1,18 @@
+<project>
+	<title />
+	<readings>
+		<reading>
+			<description>0 Loss</description>
+			<changeRate>0.0</changeRate>
+		</reading>
+		<reading>
+          <description>Normal Evaporation (0.25" a day)</description>
+          <changeRate>-2.411265432098765E-7</changeRate>
+		</reading>
+        <reading>
+            <description>Test Reading</description>
+            <date>13/10/2015 13:57:46</date>
+            <changeRate>-4.26249365804157E-6</changeRate>
+        </reading>
+	</readings>
+</project>

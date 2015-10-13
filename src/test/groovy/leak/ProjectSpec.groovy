@@ -1,5 +1,7 @@
 package leak
 
+import java.time.LocalDate
+
 import spock.lang.Specification
 
 class ProjectSpec extends Specification {
@@ -18,7 +20,7 @@ class ProjectSpec extends Specification {
 
         then:
         project.title == 'test'
-        project.readings.size() == 1
+        project.readings.size() == 2
     }
     
     void "Create new Project(File)"() {
@@ -52,12 +54,16 @@ class ProjectSpec extends Specification {
     void "Add Reading to a Project"() {
         given:
         def file = new File("build/resources/test/test.xml")
-        def reading = new File("build/resources/test/drain_4_good.csv")
+        def reading = new File("build/resources/main/drain_4_good.csv")
+        def newFile = new File("build/resources/test/test3.xml")
         def project
 
         when:
         project = new Project(file)
+        LocalDate date = LocalDate.now()
+       
         project.addReading(reading, "test reading", new Date())
+        project.write(newFile)
         println "$project"
 
         then:

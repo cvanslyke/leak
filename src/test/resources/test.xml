@@ -3,11 +3,11 @@
   <readings>
     <reading>
       <description>0</description>
-      <slope>0.0</slope>
+      <changeRate>0.0</changeRate>
     </reading>
     <reading>
       <description>reading1</description>
-      <slope>1.0</slope>
+      <changeRate>1.0</changeRate>
     </reading>    
   </readings>
 </project>

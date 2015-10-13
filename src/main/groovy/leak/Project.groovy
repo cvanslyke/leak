@@ -2,23 +2,31 @@ package leak
 
 import groovy.xml.XmlUtil
 
-import java.time.LocalDate
+import java.text.DateFormat
+import java.text.SimpleDateFormat
 
-import org.apache.commons.math3.stat.regression.SimpleRegression
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 public class Project {
     
-    // TODO: Add 2nd plot line in here. 
+    private static String ZERO_LOSS_DESCRIPTION = "0 Loss"
+    private static Double ZERO_LOSS = 0.0
+    private static String NORMAL_EVAPORATION_DESCRIPTION = "Normal Evaporation (0.25in a day)"
+    private static Double NORMAL_EVAPORATION = 2.411265432098765E-7
+    
     def example = """
     <project>
       <title/>
       <readings>
         <reading>
-          <description>0</description>
-          <slope>0.0</slope>
-        </reading>    
+          <description>${ZERO_LOSS_DESCRIPTION}</description>
+          <changeRate>${ZERO_LOSS}</changeRate>
+        </reading>
+        <reading>
+          <description>${NORMAL_EVAPORATION_DESCRIPTION}</description>
+          <changeRate>${NORMAL_EVAPORATION}</changeRate>
+        </reading>   
       </readings>
     </project>
     """
@@ -26,6 +34,7 @@ public class Project {
     
     String title    
     List<Reading> readings = new ArrayList<Reading>()
+    DateFormat df = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")
     
     def project
     def parser = new XmlParser()
@@ -58,12 +67,12 @@ public class Project {
                 
                 def date = it.date?.text()
                 if (date && !date.empty) {
-                    reading.date = LocalDate.parse(date)
+                    reading.date = df.parse(date)
                 }
                 
-                def slope = it.slope?.text()
-                if (slope && !slope.empty) {
-                    reading.slope = Double.parseDouble(slope)
+                def changeRate = it.changeRate?.text()
+                if (changeRate && !changeRate.empty) {
+                    reading.changeRate = Double.parseDouble(changeRate)
                 }
                 readings.add(reading)
             }
@@ -84,35 +93,54 @@ public class Project {
      */
     public void addReading(File csvFile, String description, Date date) {
         InputStream stream = new FileInputStream(csvFile)
-        def values = []
+        def timedValues = [:]
+        def averagedValues = []
+        def changeRates = []
         def index = 0
         
         stream.eachLine() { line ->
             index++
             if (index > 2) {
                 def tokens = line.tokenize(",")
+                def time = tokens[0]
+                def values
+                
+                if (timedValues.containsKey(time)) {
+                    values = timedValues[time]
+                } else {
+                    values = []
+                    timedValues.put(time, values)
+                }
                 values << Double.parseDouble(tokens[1])
             }
         }
-            
-        // calculate slope.
-        SimpleRegression regression = new SimpleRegression()
-        values.eachWithIndex { num, idx ->
-            regression.addData(idx, num)
+        
+        // Average out the values for each time.
+        timedValues.keySet().each {
+            def values = timedValues[it]
+            averagedValues << (values.sum() / values.size())
+        }
+        
+        // Find the changeRate
+        averagedValues.eachWithIndex { item, idx ->
+            if (idx + 1 < averagedValues.size()) {
+                double change = averagedValues[idx + 1] - averagedValues[idx]
+                changeRates << change
+            }
         }
         
         Reading reading = new Reading()
         reading.description = description
         reading.date = date
-        reading.slope = regression.getSlope()
+        reading.changeRate = (changeRates.sum() / changeRates.size())
         
         readings.add(reading)
         
         // Add to project
-        parser.createNode(project.readings[0], "reading", 
-            [description: reading.description,
-             date: reading.date,
-             slope: reading.slope])
+        Node rNode = parser.createNode(project.readings[0], "reading", [:])
+        rNode.appendNode("description", reading.description)
+        rNode.appendNode("date", df.format(date))
+        rNode.appendNode("changeRate", reading.changeRate)
     }
     
     public List<Reading> getReadings() {
@@ -145,15 +173,17 @@ class Reading {
 
     String description
     Date date
-    Double slope
+    
+    // ft/sec
+    Double changeRate
     
     public String toString() {
-        return "Reading - $description $date slope: $slope"
+        return "Reading - $description $date changeRate: $changeRate"
     }
     
     public boolean equals(Reading reading) {
         return this.description.equals(reading.description) && 
             this.date.equals(reading.date) && 
-            this.slope.equals(reading.slope)
+            this.changeRate.equals(reading.changeRate)
     }
 }

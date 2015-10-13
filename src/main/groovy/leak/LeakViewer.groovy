@@ -1,8 +1,8 @@
 package leak
 
-import java.awt.BorderLayout
 import java.awt.Container
 import java.awt.Dimension
+import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 
@@ -11,13 +11,11 @@ import javax.swing.JFrame
 import javax.swing.JMenu
 import javax.swing.JMenuBar
 import javax.swing.JMenuItem
-import javax.swing.JPanel
-import javax.swing.JScrollPane
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
 import javax.swing.filechooser.FileNameExtensionFilter
 
-public class LeakGraph extends JFrame implements ActionListener {
+public class LeakViewer extends JFrame implements ActionListener {
 
     JFileChooser projectChooser
     JFileChooser readingChooser
@@ -34,11 +32,11 @@ public class LeakGraph extends JFrame implements ActionListener {
     Project currentProject
     File currentFile
 
-    public LeakGraph() {
+    public LeakViewer() {
         super("Aaron's Leak Detection")
+        setLayout(new FlowLayout())
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
         setJMenuBar(createMenuBar())
-        setContentPane(createContentPane())
 
         projectChooser = new JFileChooser()
         projectChooser.setDialogTitle("Choose Project")
@@ -100,14 +98,6 @@ public class LeakGraph extends JFrame implements ActionListener {
         return menuBar
     }
 
-    public Container createContentPane() {
-        JPanel contentPane = new JPanel(new BorderLayout());
-        contentPane.setOpaque(true);
-        JScrollPane scrollPane = new JScrollPane();
-        contentPane.add(scrollPane, BorderLayout.CENTER);
-        return contentPane;
-    }
-
     public void enableDisable() {
         saveItem.setEnabled(currentProject != null)
         saveAsItem.setEnabled(currentProject != null)
@@ -139,7 +129,9 @@ public class LeakGraph extends JFrame implements ActionListener {
                 currentProject = new Project(file)
                 currentFile = file
 
-                // TODO: show graph.
+                LeakChart chart = new LeakChart(currentProject)
+                this.setContentPane(chart)
+                this.pack()
             }
         } else if (source == saveItem) {
             currentProject.write(currentFile)
@@ -172,10 +164,10 @@ public class LeakGraph extends JFrame implements ActionListener {
 
     private static void createAndShowGUI() {
         //Create and set up the window.
-        JFrame frame = new LeakGraph()
+        JFrame frame = new LeakViewer()
 
         //Display the window.
-        frame.setPreferredSize(new Dimension(500, 500))
+        frame.setPreferredSize(new Dimension(750, 500))
         frame.pack();
         frame.setVisible(true);
     }
