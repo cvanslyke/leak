@@ -11,6 +11,7 @@ import org.jfree.chart.ChartPanel
 import org.jfree.chart.JFreeChart
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.chart.renderer.xy.XYItemRenderer
+import org.jfree.data.Range
 import org.jfree.data.xy.XYDataset
 import org.jfree.data.xy.XYSeries
 import org.jfree.data.xy.XYSeriesCollection
@@ -28,6 +29,14 @@ public class LeakChart extends JPanel {
             dataset, 
             PlotOrientation.VERTICAL,
             true, true, false)
+        
+        Range timeRange = new Range(0.0, 24.0)
+        lineChart.getXYPlot().getDomainAxis().setRange(timeRange)
+        lineChart.getXYPlot().getDomainAxis().setDefaultAutoRange(timeRange)
+        
+        Range depthRange = new Range(9.5, 10.1)
+        lineChart.getXYPlot().getRangeAxis().setRange(depthRange)
+        lineChart.getXYPlot().getRangeAxis().setDefaultAutoRange(depthRange)
         
         lineChart.setBackgroundImage(new ImageIcon("/logo.png").getImage())
         

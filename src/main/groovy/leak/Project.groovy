@@ -13,7 +13,7 @@ public class Project {
     private static String ZERO_LOSS_DESCRIPTION = "0 Loss"
     private static Double ZERO_LOSS = 0.0
     private static String NORMAL_EVAPORATION_DESCRIPTION = "Normal Evaporation (0.25in a day)"
-    private static Double NORMAL_EVAPORATION = 2.411265432098765E-7
+    private static Double NORMAL_EVAPORATION = -2.411265432098765E-7
     
     def example = """
     <project>
@@ -152,10 +152,15 @@ public class Project {
     }
     
     public void removeReading(String description) {
+        def remove = []
         readings.each {
             if (it.description.equals(description)) {
-                removeReading(it)
+                remove << it
             }
+        }
+        
+        remove.each {
+            removeReading(it)
         }
     }
     
