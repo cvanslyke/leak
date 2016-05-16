@@ -25,7 +25,7 @@ public class LeakChart extends JPanel {
         XYDataset dataset = createDataset(project)
         JFreeChart lineChart = ChartFactory.createXYLineChart(
             project.title,
-            "Hours", "Depth (ft)",
+            "Hours", "Estimated Water Loss (ft.)",
             dataset, 
             PlotOrientation.VERTICAL,
             true, true, false)
@@ -34,7 +34,8 @@ public class LeakChart extends JPanel {
         lineChart.getXYPlot().getDomainAxis().setRange(timeRange)
         lineChart.getXYPlot().getDomainAxis().setDefaultAutoRange(timeRange)
         
-        Range depthRange = new Range(9.5, 10.1)
+        // 0.34 is about 4". 
+        Range depthRange = new Range(-0.34, 0.05) 
         lineChart.getXYPlot().getRangeAxis().setRange(depthRange)
         lineChart.getXYPlot().getRangeAxis().setDefaultAutoRange(depthRange)
         
@@ -53,10 +54,10 @@ public class LeakChart extends JPanel {
         XYSeriesCollection dataset = new XYSeriesCollection() 
         project.readings.each { reading ->
             XYSeries series = new XYSeries(reading.description)
-            series.add(0.0, 10.0)
+            series.add(0.0, 0.0)
             
             // add last point.
-            double point = 10.0 + (reading.changeRate * 86400)
+            double point = /*10.0 + */(reading.changeRate * 86400)
             series.add((double) 24.0, point)
             dataset.addSeries(series)
         }

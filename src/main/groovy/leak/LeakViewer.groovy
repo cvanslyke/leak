@@ -3,12 +3,13 @@ package leak
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
-import java.awt.GridLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
+import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 
+import javax.swing.BoxLayout
 import javax.swing.JButton
 import javax.swing.JFileChooser
 import javax.swing.JFrame
@@ -19,6 +20,8 @@ import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
 import javax.swing.JTextField
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
@@ -127,7 +130,8 @@ public class LeakViewer extends JFrame implements ActionListener {
                 String description = reading.getDescription()
                 if (description != null && !description.equals("0") 
                     && !description.equals(Project.ZERO_LOSS_DESCRIPTION) 
-                    && !description.equals(Project.NORMAL_EVAPORATION_DESCRIPTION)) {
+                    && !description.equals(Project.NORMAL_EVAPORATION_DESCRIPTION)
+                    && !description.equals(Project.HIGH_EVAPORATION_DESCRIPTION)) {
                     JMenuItem item = new JMenuItem(description)
                     item.addActionListener(this)
                     removeMenu.add(item)
@@ -171,6 +175,9 @@ public class LeakViewer extends JFrame implements ActionListener {
             int returnVal = saveChooser.showSaveDialog(this)
             if (returnVal == saveChooser.APPROVE_OPTION) {
                 File file = saveChooser.getSelectedFile()
+                if (!file.getName().endsWith(".xml")) {
+                    file = new File(file.getParent(), file.getName() + ".xml")
+                }
                 currentProject.write(file)
                 currentFile = file
             }
@@ -184,7 +191,7 @@ public class LeakViewer extends JFrame implements ActionListener {
                 JOptionPane.PLAIN_MESSAGE)
             if (panel.isOk() && currentProject != null) {
                 currentProject.addReading(
-                    panel.getFile(), panel.getDescription(), panel.getDate())
+                    panel.getFile(), panel.getDescription(), panel.getDate(), panel.getNotes())
                 showChart()
             }
 
@@ -233,27 +240,43 @@ public class LeakViewer extends JFrame implements ActionListener {
         private JTextField descriptionField = new JTextField(20)
         private JTextField dateTimeField = new JTextField(20)
         private JFileChooser csvChooser = new JFileChooser()
-        private JTextField fileField = new JTextField(15)
+        private JTextField fileField = new JTextField(16)
+        private JTextArea notesField = new JTextArea(10, 20)
         
-        DateFormat df = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")
+        DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
         
         public ReadingInputPanel() {
             super()
-            this.setLayout(new GridLayout(3,2))
-            this.add(new JLabel("Description:"))
-            this.add(descriptionField)
-            this.add(new JLabel("Date:"))
-            this.add(dateTimeField)
-            this.add(new JLabel("File:"))
+            this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
             
-            JPanel filePanel = new JPanel()
-            filePanel.setLayout(new BorderLayout())
+            JPanel descriptionPanel = new JPanel(new BorderLayout())
+            descriptionPanel.add(new JLabel("Description:"), BorderLayout.WEST)
+            descriptionPanel.add(descriptionField, BorderLayout.EAST)
+            
+            JPanel datePanel = new JPanel(new BorderLayout())
+            datePanel.add(new JLabel("Date:"), BorderLayout.WEST)
+            datePanel.add(dateTimeField, BorderLayout.EAST)
+            
+            JPanel filePanel = new JPanel(new BorderLayout())
+            filePanel.add(new JLabel("File:"), BorderLayout.WEST)
+            
+            JPanel fPanel = new JPanel(new BorderLayout())
             fileField.setEditable(false)
-            filePanel.add(fileField, BorderLayout.WEST)
+            fPanel.add(fileField, BorderLayout.WEST)
             JButton fileButton = new JButton("...")
             fileButton.addActionListener(this)
-            filePanel.add(fileButton, BorderLayout.EAST)
+            fPanel.add(fileButton, BorderLayout.EAST)
+            filePanel.add(fPanel, BorderLayout.EAST)
+            
+            JPanel notesPanel = new JPanel(new BorderLayout())
+            JScrollPane notesScrollPane = new JScrollPane(notesField)
+            notesPanel.add(new JLabel("Notes:"), BorderLayout.WEST)
+            notesPanel.add(notesScrollPane, BorderLayout.EAST)
+            
+            this.add(descriptionPanel)
+            this.add(datePanel)
             this.add(filePanel)
+            this.add(notesPanel)
             
             csvChooser.setDialogTitle("Choose Reading")
             FileNameExtensionFilter csvFilter = new FileNameExtensionFilter(
@@ -275,6 +298,10 @@ public class LeakViewer extends JFrame implements ActionListener {
         
         public File getFile() {
             return csvChooser.getSelectedFile()
+        }
+        
+        public String getNotes() {
+            return notesField.getText()
         }
         
         public boolean isOk() {

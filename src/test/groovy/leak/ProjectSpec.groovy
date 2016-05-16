@@ -20,7 +20,7 @@ class ProjectSpec extends Specification {
 
         then:
         project.title == 'test'
-        project.readings.size() == 2
+        project.readings.size() == 3
     }
     
     void "Create new Project(File)"() {
@@ -62,7 +62,7 @@ class ProjectSpec extends Specification {
         project = new Project(file)
         LocalDate date = LocalDate.now()
        
-        project.addReading(reading, "test reading", new Date())
+        project.addReading(reading, "test reading", new Date(), "")
         project.write(newFile)
         println "$project"
 

@@ -12,8 +12,10 @@ public class Project {
     
     private static String ZERO_LOSS_DESCRIPTION = "0 Loss"
     private static Double ZERO_LOSS = 0.0
-    private static String NORMAL_EVAPORATION_DESCRIPTION = "Normal Evaporation (0.25in a day)"
+    private static String NORMAL_EVAPORATION_DESCRIPTION = "Normal Evaporation (0.25\" a day)"
     private static Double NORMAL_EVAPORATION = -2.411265432098765E-7
+    private static String HIGH_EVAPORATION_DESCRIPTION = "High Evaporation (0.5\" a day)"
+    private static Double HIGH_EVAPORATION = NORMAL_EVAPORATION * 2
     
     def example = """
     <project>
@@ -26,6 +28,10 @@ public class Project {
         <reading>
           <description>${NORMAL_EVAPORATION_DESCRIPTION}</description>
           <changeRate>${NORMAL_EVAPORATION}</changeRate>
+        </reading>
+        <reading>
+          <description>${HIGH_EVAPORATION_DESCRIPTION}</description>
+          <changeRate>${HIGH_EVAPORATION}</changeRate>
         </reading>   
       </readings>
     </project>
@@ -91,7 +97,7 @@ public class Project {
      * Adds CSV reading from a file. 
      * @param File path to file. 
      */
-    public void addReading(File csvFile, String description, Date date) {
+    public void addReading(File csvFile, String description, Date date, String notes) {
         InputStream stream = new FileInputStream(csvFile)
         def timedValues = [:]
         def averagedValues = []
@@ -133,6 +139,7 @@ public class Project {
         reading.description = description
         reading.date = date
         reading.changeRate = (changeRates.sum() / changeRates.size())
+        reading.notes = notes
         
         readings.add(reading)
         
@@ -141,6 +148,7 @@ public class Project {
         rNode.appendNode("description", reading.description)
         rNode.appendNode("date", df.format(date))
         rNode.appendNode("changeRate", reading.changeRate)
+        rNode.appendNode("notes", reading.notes)
     }
     
     public List<Reading> getReadings() {
@@ -149,6 +157,12 @@ public class Project {
     
     public void removeReading(Reading reading) {
         readings.remove(reading)
+        
+        // Remove from project.
+        def remove = project.readings.reading.description.find { 
+            it.text() == reading.description }
+        def parent = remove.parent()
+        project.readings.remove(parent)
     }
     
     public void removeReading(String description) {
@@ -177,6 +191,7 @@ public class Project {
 class Reading {
 
     String description
+    String notes
     Date date
     
     // ft/sec
