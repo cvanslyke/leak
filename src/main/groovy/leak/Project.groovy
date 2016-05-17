@@ -24,14 +24,17 @@ public class Project {
         <reading>
           <description>${ZERO_LOSS_DESCRIPTION}</description>
           <changeRate>${ZERO_LOSS}</changeRate>
+          <visible>true</visible>
         </reading>
         <reading>
           <description>${NORMAL_EVAPORATION_DESCRIPTION}</description>
           <changeRate>${NORMAL_EVAPORATION}</changeRate>
+          <visible>true</visible>
         </reading>
         <reading>
           <description>${HIGH_EVAPORATION_DESCRIPTION}</description>
           <changeRate>${HIGH_EVAPORATION}</changeRate>
+          <visible>false</visible>
         </reading>   
       </readings>
     </project>
@@ -40,7 +43,7 @@ public class Project {
     
     String title    
     List<Reading> readings = new ArrayList<Reading>()
-    DateFormat df = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")
+    DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
     
     def project
     def parser = new XmlParser()
@@ -74,6 +77,16 @@ public class Project {
                 def date = it.date?.text()
                 if (date && !date.empty) {
                     reading.date = df.parse(date)
+                }
+                
+                def notes = it.notes?.text()
+                if (notes && !notes.empty) {
+                    reading.notes = notes
+                }
+                
+                def visible = it.visible.text()
+                if (visible && !visible.empty) {
+                    reading.visible = visible.toBoolean()
                 }
                 
                 def changeRate = it.changeRate?.text()
@@ -140,41 +153,47 @@ public class Project {
         reading.date = date
         reading.changeRate = (changeRates.sum() / changeRates.size())
         reading.notes = notes
+        reading.visible = true
         
+        addReading(reading)
+    }
+    
+    public void addReading(Reading reading) {
         readings.add(reading)
         
         // Add to project
         Node rNode = parser.createNode(project.readings[0], "reading", [:])
         rNode.appendNode("description", reading.description)
-        rNode.appendNode("date", df.format(date))
+        rNode.appendNode("date", df.format(reading.date))
         rNode.appendNode("changeRate", reading.changeRate)
         rNode.appendNode("notes", reading.notes)
+        rNode.appendNode("visible", reading.visible)
     }
     
     public List<Reading> getReadings() {
         return readings
     }
     
-    public void removeReading(Reading reading) {
-        readings.remove(reading)
-        
-        // Remove from project.
-        def remove = project.readings.reading.description.find { 
-            it.text() == reading.description }
-        def parent = remove.parent()
-        project.readings.remove(parent)
-    }
-    
-    public void removeReading(String description) {
-        def remove = []
-        readings.each {
-            if (it.description.equals(description)) {
-                remove << it
+    public Reading getReading(String description) {
+        for (Reading reading : readings) {
+            if (reading.description.equals(description)) {
+                return reading
             }
         }
         
-        remove.each {
-            removeReading(it)
+        return null
+    }
+    
+    public void removeReading(Reading reading) {
+        if (reading != null) {
+            readings.remove(reading)
+
+            // Remove from project.
+            def toRemove = project.readings.reading.find {
+                it.description.text().equals(reading.description) }
+                                                
+            def parent = toRemove.parent()
+            parent.remove(toRemove)
         }
     }
     
@@ -193,6 +212,7 @@ class Reading {
     String description
     String notes
     Date date
+    boolean visible
     
     // ft/sec
     Double changeRate

@@ -5,12 +5,13 @@ import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
-import java.io.File
 import java.text.DateFormat
+import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 
 import javax.swing.BoxLayout
 import javax.swing.JButton
+import javax.swing.JCheckBox
 import javax.swing.JFileChooser
 import javax.swing.JFrame
 import javax.swing.JLabel
@@ -41,6 +42,7 @@ public class LeakViewer extends JFrame implements ActionListener {
     JMenuItem exitItem
     JMenuItem addItem
     JMenu removeMenu
+    JMenu viewMenu
 
     Project currentProject
     File currentFile
@@ -99,17 +101,22 @@ public class LeakViewer extends JFrame implements ActionListener {
         exitItem.addActionListener(this)
         fileMenu.add(exitItem)
 
-        JMenu editMenu = new JMenu("Edit")
-        menuBar.add(editMenu)
+        JMenu readingsMenu = new JMenu("Readings")
+        menuBar.add(readingsMenu)
 
         // Add Reading
-        addItem = new JMenuItem("Add Reading")
+        addItem = new JMenuItem("Add")
         addItem.addActionListener(this)
-        editMenu.add(addItem)
+        readingsMenu.add(addItem)
 
         // Remove Reading
-        removeMenu = new JMenu("Remove Reading")
-        editMenu.add(removeMenu)
+        removeMenu = new JMenu("Remove")
+        readingsMenu.add(removeMenu)
+        
+        // View Reading
+        viewMenu = new JMenu("View")
+        readingsMenu.add(viewMenu)
+        
 
         enableDisable()
 
@@ -121,9 +128,10 @@ public class LeakViewer extends JFrame implements ActionListener {
         saveAsItem.setEnabled(currentProject != null)
         addItem.setEnabled(currentProject != null)
         removeMenu.setEnabled(currentProject != null)
+        viewMenu.setEnabled(currentProject != null)
 
-        // Set remove submenu.
         removeMenu.removeAll()
+        viewMenu.removeAll()
         if (currentProject != null) {
             List<Reading> readings = currentProject.getReadings()
             for (Reading reading : readings) {
@@ -132,9 +140,13 @@ public class LeakViewer extends JFrame implements ActionListener {
                     && !description.equals(Project.ZERO_LOSS_DESCRIPTION) 
                     && !description.equals(Project.NORMAL_EVAPORATION_DESCRIPTION)
                     && !description.equals(Project.HIGH_EVAPORATION_DESCRIPTION)) {
-                    JMenuItem item = new JMenuItem(description)
-                    item.addActionListener(this)
-                    removeMenu.add(item)
+                    JMenuItem viewItem = new JMenuItem(description)
+                    viewItem.addActionListener(this)
+                    viewMenu.add(viewItem)
+                    
+                    JMenuItem removeItem = new JMenuItem(description)
+                    removeItem.addActionListener(this)
+                    removeMenu.add(removeItem)
                 }
             }
         }
@@ -201,8 +213,32 @@ public class LeakViewer extends JFrame implements ActionListener {
                 JPopupMenu popup = item.getParent()
                 JMenu parentMenu = popup.getInvoker()
                 if (parentMenu == removeMenu) {
-                    currentProject.removeReading((String) item.getText())
+                    Reading reading = currentProject.getReading((String) item.getText())
+                    currentProject.removeReading(reading)
                     showChart()
+                } else if (parentMenu == viewMenu) {
+                    Reading reading = currentProject.getReading((String) item.getText())
+                    ReadingViewPanel viewPanel = new ReadingViewPanel(reading)
+                    int returnVal = JOptionPane.showConfirmDialog(
+                            this,
+                            viewPanel,
+                            "Leak Reading Properties:",
+                            JOptionPane.OK_CANCEL_OPTION,
+                            JOptionPane.PLAIN_MESSAGE);
+                    if (returnVal == JOptionPane.OK_OPTION) {
+                        
+                        Reading newReading = new Reading()
+                        newReading.description = viewPanel.getDescription()
+                        newReading.notes = viewPanel.getNotes()
+                        newReading.date = viewPanel.getDate()
+                        newReading.visible = viewPanel.getVisible()
+                        newReading.changeRate = reading.changeRate
+                        
+                        currentProject.removeReading(reading)
+                        currentProject.addReading(newReading)
+                        
+                        showChart()
+                    }
                 }
             }
         }
@@ -210,7 +246,7 @@ public class LeakViewer extends JFrame implements ActionListener {
         enableDisable()
     }
     
-    private showChart() {
+    private void showChart() {
         LeakChart chart = new LeakChart(currentProject)
         this.setContentPane(chart)
         this.pack()
@@ -314,6 +350,76 @@ public class LeakViewer extends JFrame implements ActionListener {
             if (returnVal == csvChooser.APPROVE_OPTION) {
                 fileField.setText(csvChooser.getSelectedFile().getName())
             }
+        }
+    }
+    
+    public class ReadingViewPanel extends JPanel {
+        
+        private JTextField descriptionField = new JTextField(20)
+        private JTextField dateTimeField = new JTextField(20)
+        private JTextField totalLoss = new JTextField(20)
+        private JCheckBox visibleField = new JCheckBox()
+        private JTextArea notesField = new JTextArea(10, 20)
+        
+        DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
+        DecimalFormat decimalFormat = new DecimalFormat("##.###")
+        
+        public ReadingViewPanel(Reading reading) {
+            super()
+            this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
+            
+            JPanel descriptionPanel = new JPanel(new BorderLayout())
+            descriptionPanel.add(new JLabel("Description:"), BorderLayout.WEST)
+            descriptionPanel.add(descriptionField, BorderLayout.EAST)
+            descriptionField.setText(reading.description)
+            
+            JPanel datePanel = new JPanel(new BorderLayout())
+            datePanel.add(new JLabel("Date:"), BorderLayout.WEST)
+            datePanel.add(dateTimeField, BorderLayout.EAST)
+            dateTimeField.setText(dateFormat.format(reading.date))
+            
+            JPanel isVisblePanel = new JPanel(new BorderLayout())
+            isVisblePanel.add(new JLabel("Visible?:"), BorderLayout.WEST)
+            visibleField = new JCheckBox("", reading.visible)
+            isVisblePanel.add(visibleField, BorderLayout.EAST)
+            
+            JPanel notesPanel = new JPanel(new BorderLayout())
+            JScrollPane notesScrollPane = new JScrollPane(notesField)
+            notesPanel.add(new JLabel("Notes:"), BorderLayout.WEST)
+            notesPanel.add(notesScrollPane, BorderLayout.EAST)
+            notesField.setText(reading.notes)
+            
+            JPanel totalLossPanel = new JPanel(new BorderLayout())
+            totalLossPanel.add(new JLabel("Total Loss Over 24 Hrs (in ft.):"), BorderLayout.WEST)
+            totalLossPanel.add(totalLoss, BorderLayout.EAST)
+            totalLoss.setEditable(false)
+            totalLoss.setText(decimalFormat.format(reading.changeRate * 86400))
+            
+            this.add(descriptionPanel)
+            this.add(datePanel)
+            this.add(isVisblePanel)
+            this.add(notesPanel)
+            this.add(totalLossPanel)
+        }
+        
+        public String getDescription() {
+            return descriptionField.getText()
+        }
+        
+        public Date getDate() {
+            return dateFormat.parse(dateTimeField.getText())
+        }
+        
+        public String getNotes() {
+            return notesField.getText()
+        }
+        
+        public boolean getVisible() {
+            return visibleField.isSelected()
+        }
+        
+        public boolean isOk() {
+            return getDate() != null && getDescription() != null
         }
     }
 }
