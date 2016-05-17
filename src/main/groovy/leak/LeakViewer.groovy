@@ -138,15 +138,16 @@ public class LeakViewer extends JFrame implements ActionListener {
                 String description = reading.getDescription()
                 if (description != null && !description.equals("0") 
                     && !description.equals(Project.ZERO_LOSS_DESCRIPTION) 
-                    && !description.equals(Project.NORMAL_EVAPORATION_DESCRIPTION)
-                    && !description.equals(Project.HIGH_EVAPORATION_DESCRIPTION)) {
+                    && !description.equals(Project.NORMAL_EVAPORATION_DESCRIPTION)) {
                     JMenuItem viewItem = new JMenuItem(description)
                     viewItem.addActionListener(this)
                     viewMenu.add(viewItem)
                     
-                    JMenuItem removeItem = new JMenuItem(description)
-                    removeItem.addActionListener(this)
-                    removeMenu.add(removeItem)
+                    if (!description.equals(Project.HIGH_EVAPORATION_DESCRIPTION)) {
+                        JMenuItem removeItem = new JMenuItem(description)
+                        removeItem.addActionListener(this)
+                        removeMenu.add(removeItem)
+                    }
                 }
             }
         }
@@ -355,11 +356,11 @@ public class LeakViewer extends JFrame implements ActionListener {
     
     public class ReadingViewPanel extends JPanel {
         
-        private JTextField descriptionField = new JTextField(20)
-        private JTextField dateTimeField = new JTextField(20)
-        private JTextField totalLoss = new JTextField(20)
-        private JCheckBox visibleField = new JCheckBox()
-        private JTextArea notesField = new JTextArea(10, 20)
+        private JTextField descriptionField = null
+        private JTextField dateTimeField = null
+        private JTextField totalLoss = null
+        private JCheckBox visibleField = null
+        private JTextArea notesField = null
         
         DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
         DecimalFormat decimalFormat = new DecimalFormat("##.###")
@@ -370,13 +371,17 @@ public class LeakViewer extends JFrame implements ActionListener {
             
             JPanel descriptionPanel = new JPanel(new BorderLayout())
             descriptionPanel.add(new JLabel("Description:"), BorderLayout.WEST)
+            descriptionField = new JTextField(20)
             descriptionPanel.add(descriptionField, BorderLayout.EAST)
             descriptionField.setText(reading.description)
             
-            JPanel datePanel = new JPanel(new BorderLayout())
-            datePanel.add(new JLabel("Date:"), BorderLayout.WEST)
-            datePanel.add(dateTimeField, BorderLayout.EAST)
-            dateTimeField.setText(dateFormat.format(reading.date))
+            if (reading.date != null) {
+                JPanel datePanel = new JPanel(new BorderLayout())
+                datePanel.add(new JLabel("Date:"), BorderLayout.WEST)
+                dateTimeField = new JTextField(20)
+                datePanel.add(dateTimeField, BorderLayout.EAST)
+                dateTimeField.setText(dateFormat.format(reading.date))
+            }
             
             JPanel isVisblePanel = new JPanel(new BorderLayout())
             isVisblePanel.add(new JLabel("Visible?:"), BorderLayout.WEST)
@@ -384,6 +389,7 @@ public class LeakViewer extends JFrame implements ActionListener {
             isVisblePanel.add(visibleField, BorderLayout.EAST)
             
             JPanel notesPanel = new JPanel(new BorderLayout())
+            notesField = new JTextArea(10, 20)
             JScrollPane notesScrollPane = new JScrollPane(notesField)
             notesPanel.add(new JLabel("Notes:"), BorderLayout.WEST)
             notesPanel.add(notesScrollPane, BorderLayout.EAST)
@@ -391,12 +397,15 @@ public class LeakViewer extends JFrame implements ActionListener {
             
             JPanel totalLossPanel = new JPanel(new BorderLayout())
             totalLossPanel.add(new JLabel("Total Loss Over 24 Hrs (in ft.):"), BorderLayout.WEST)
+            totalLoss = new JTextField(20)
             totalLossPanel.add(totalLoss, BorderLayout.EAST)
             totalLoss.setEditable(false)
             totalLoss.setText(decimalFormat.format(reading.changeRate * 86400))
             
             this.add(descriptionPanel)
-            this.add(datePanel)
+            if (reading.date != null) {
+                this.add(datePanel)
+            }
             this.add(isVisblePanel)
             this.add(notesPanel)
             this.add(totalLossPanel)
@@ -407,7 +416,11 @@ public class LeakViewer extends JFrame implements ActionListener {
         }
         
         public Date getDate() {
-            return dateFormat.parse(dateTimeField.getText())
+            if (dateTimeField != null) {
+                return dateFormat.parse(dateTimeField.getText())
+            } else {
+                return null
+            }
         }
         
         public String getNotes() {

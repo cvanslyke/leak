@@ -164,7 +164,9 @@ public class Project {
         // Add to project
         Node rNode = parser.createNode(project.readings[0], "reading", [:])
         rNode.appendNode("description", reading.description)
-        rNode.appendNode("date", df.format(reading.date))
+        if (reading.date != null) {
+            rNode.appendNode("date", df.format(reading.date))
+        }
         rNode.appendNode("changeRate", reading.changeRate)
         rNode.appendNode("notes", reading.notes)
         rNode.appendNode("visible", reading.visible)
