@@ -31,9 +31,8 @@ import javax.swing.filechooser.FileNameExtensionFilter
 import leak.LeakChart.ZoomLevelEnum
 
 public class LeakViewer extends JFrame implements ActionListener {
-
+    
     JFileChooser projectChooser
-    JFileChooser readingChooser
     JFileChooser saveChooser
 
     //MenuItems.
@@ -59,20 +58,32 @@ public class LeakViewer extends JFrame implements ActionListener {
         setLayout(new FlowLayout())
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
         setJMenuBar(createMenuBar())
+        
+        String homePath = new JFileChooser().getFileSystemView().getDefaultDirectory().getAbsolutePath()
+        
+        // Create directory if not exists.
+        File leakPath = new File(homePath + "/LeakDetection")
+        if (!leakPath.exists()) {
+            leakPath.mkdir()
+        }
+        
+        File projectPath = new File(leakPath.getAbsolutePath() + "/projects")
+        if (!projectPath.exists()) {
+            projectPath.mkdir()
+        }
+        
+        File readingsPath = new File(leakPath.getAbsolutePath() + "/readings")
+        if (!readingsPath.exists()) {
+            readingsPath.mkdir()
+        }
 
-        projectChooser = new JFileChooser()
+        projectChooser = new JFileChooser(projectPath)
         projectChooser.setDialogTitle("Choose Project")
         FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter(
                 "XML Projets", "xml");
         projectChooser.setFileFilter(xmlFilter)
-
-        readingChooser = new JFileChooser()
-        readingChooser.setDialogTitle("Choose .csv file to add to Project")
-        FileNameExtensionFilter csvFilter = new FileNameExtensionFilter(
-                "CSV files", "csv");
-        readingChooser.setFileFilter(csvFilter)
         
-        saveChooser = new JFileChooser()
+        saveChooser = new JFileChooser(projectPath)
         saveChooser.setDialogTitle("Specify file to Save")
         saveChooser.setFileFilter(xmlFilter)
     }
@@ -296,9 +307,9 @@ public class LeakViewer extends JFrame implements ActionListener {
         
         private JTextField descriptionField = new JTextField(20)
         private JTextField dateTimeField = new JTextField(20)
-        private JFileChooser csvChooser = new JFileChooser()
         private JTextField fileField = new JTextField(16)
         private JTextArea notesField = new JTextArea(10, 20)
+        private JFileChooser csvChooser = null
         
         DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
         
@@ -335,6 +346,10 @@ public class LeakViewer extends JFrame implements ActionListener {
             this.add(filePanel)
             this.add(notesPanel)
             
+            String homePath = new JFileChooser().getFileSystemView().getDefaultDirectory().getAbsolutePath()
+            File readingsPath = new File(homePath + "/LeakDetection/readings")
+            
+            csvChooser = new JFileChooser(readingsPath)
             csvChooser.setDialogTitle("Choose Reading")
             FileNameExtensionFilter csvFilter = new FileNameExtensionFilter(
                 "CSV Readings", "csv");

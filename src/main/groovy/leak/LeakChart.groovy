@@ -2,7 +2,6 @@ package leak
 
 import java.awt.Color
 import java.awt.Image
-import java.awt.geom.Arc2D.Double;
 
 import javax.swing.ImageIcon
 import javax.swing.JPanel
@@ -32,6 +31,10 @@ public class LeakChart extends JPanel {
     private JFreeChart chart
     private Project currentProject
     
+    private static Color ZERO_LOSS_COLOR = Color.GREEN
+    private static Color NORMAL_EVAP_COLOR = new Color(51, 255, 51)
+    private static Color HIGH_EVAP_COLOR = new Color(102, 255, 102)
+    
     public LeakChart(Project project) {
                 
         currentProject = project
@@ -56,9 +59,28 @@ public class LeakChart extends JPanel {
         ChartPanel panel =  new ChartPanel(chart)
         this.add(panel)
         
+        // Set colors.
         XYItemRenderer renderer = chart.getXYPlot().getRenderer()
-        renderer.setSeriesPaint(0, Color.GREEN)
-        renderer.setSeriesPaint(1, Color.GREEN)
+        int index = 0
+        for (Reading reading : project.getReadings()) {
+            Color color = null;
+            if (reading.description.equals(Project.ZERO_LOSS_DESCRIPTION)) {
+                color = ZERO_LOSS_COLOR
+            } else if (reading.description.equals(Project.NORMAL_EVAPORATION_DESCRIPTION)) {
+                color = NORMAL_EVAP_COLOR
+            } else if (reading.description.equals(Project.HIGH_EVAPORATION_DESCRIPTION)) {
+                color = HIGH_EVAP_COLOR
+            } else {
+                Random rand = new Random();            
+                float r = rand.nextFloat();
+                float g = rand.nextFloat();
+                float b = rand.nextFloat();            
+                color = new Color(r, g, b);
+            }
+            
+            renderer.setSeriesPaint(index, color)
+            index++
+        }
     }
     
     private XYDataset createDataset(Project project) {
