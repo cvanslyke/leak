@@ -2,6 +2,7 @@ package leak
 
 import java.awt.Color
 import java.awt.Image
+import java.awt.geom.Arc2D.Double;
 
 import javax.swing.ImageIcon
 import javax.swing.JPanel
@@ -20,10 +21,22 @@ public class LeakChart extends JPanel {
     
     private Image img
     
+    public enum ZoomLevelEnum {
+        DEFAULT,
+        FIT
+    }
+    
+    // 0.34 is about 4".
+    private static Range DEFAULT_RANGE = new Range(-0.34, 0.05)
+    
+    private JFreeChart chart
+    private Project currentProject
+    
     public LeakChart(Project project) {
                 
+        currentProject = project
         XYDataset dataset = createDataset(project)
-        JFreeChart lineChart = ChartFactory.createXYLineChart(
+        chart = ChartFactory.createXYLineChart(
             project.title,
             "Hours", "Estimated Water Loss (ft.)",
             dataset, 
@@ -31,20 +44,19 @@ public class LeakChart extends JPanel {
             true, true, false)
         
         Range timeRange = new Range(0.0, 24.0)
-        lineChart.getXYPlot().getDomainAxis().setRange(timeRange)
-        lineChart.getXYPlot().getDomainAxis().setDefaultAutoRange(timeRange)
+        chart.getXYPlot().getDomainAxis().setRange(timeRange)
+        chart.getXYPlot().getDomainAxis().setDefaultAutoRange(timeRange)
         
-        // 0.34 is about 4". 
-        Range depthRange = new Range(-0.34, 0.05) 
-        lineChart.getXYPlot().getRangeAxis().setRange(depthRange)
-        lineChart.getXYPlot().getRangeAxis().setDefaultAutoRange(depthRange)
+        Range depthRange = DEFAULT_RANGE
+        chart.getXYPlot().getRangeAxis().setRange(depthRange)
+        chart.getXYPlot().getRangeAxis().setDefaultAutoRange(depthRange)
         
-        lineChart.setBackgroundImage(new ImageIcon("/logo.png").getImage())
+        chart.setBackgroundImage(new ImageIcon("/logo.png").getImage())
         
-        ChartPanel panel =  new ChartPanel(lineChart)
+        ChartPanel panel =  new ChartPanel(chart)
         this.add(panel)
         
-        XYItemRenderer renderer = lineChart.getXYPlot().getRenderer()
+        XYItemRenderer renderer = chart.getXYPlot().getRenderer()
         renderer.setSeriesPaint(0, Color.GREEN)
         renderer.setSeriesPaint(1, Color.GREEN)
     }
@@ -58,12 +70,36 @@ public class LeakChart extends JPanel {
                 series.add(0.0, 0.0)
                 
                 // add last point.
-                double point = /*10.0 + */(reading.changeRate * 86400)
+                double point = (reading.changeRate * 86400)
                 series.add((double) 24.0, point)
                 dataset.addSeries(series)
             }
         }
         
         return dataset
+    }
+    
+    public void zoom(ZoomLevelEnum zoomLevel) {
+        
+        Range depthRange = DEFAULT_RANGE
+        
+        if (zoomLevel == ZoomLevelEnum.FIT) {
+            double lowestPoint = -0.34
+            double highestPoint = 0.05
+            for (Reading reading : currentProject.getReadings()) {
+                if (reading.visible) {
+                    double point = (reading.changeRate * 86400)
+                    if (point < lowestPoint) {
+                        lowestPoint = point
+                    } else if (point > highestPoint) {
+                        highestPoint = point
+                    }
+                }
+            }
+            depthRange = new Range(lowestPoint, highestPoint)
+        }
+        
+        chart.getXYPlot().getRangeAxis().setRange(depthRange)
+        chart.getXYPlot().getRangeAxis().setDefaultAutoRange(depthRange)
     }
 }

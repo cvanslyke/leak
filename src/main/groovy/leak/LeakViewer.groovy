@@ -28,6 +28,8 @@ import javax.swing.SwingUtilities
 import javax.swing.UIManager
 import javax.swing.filechooser.FileNameExtensionFilter
 
+import leak.LeakChart.ZoomLevelEnum
+
 public class LeakViewer extends JFrame implements ActionListener {
 
     JFileChooser projectChooser
@@ -41,11 +43,16 @@ public class LeakViewer extends JFrame implements ActionListener {
     JMenuItem saveItem
     JMenuItem exitItem
     JMenuItem addItem
+    JMenuItem defaultZoom
+    JMenuItem fitZoom
+    JMenu readingsMenu
     JMenu removeMenu
     JMenu viewMenu
+    JMenu zoomMenu
 
     Project currentProject
     File currentFile
+    LeakChart currentChart
 
     public LeakViewer() {
         super("Aaron's Leak Detection")
@@ -101,7 +108,7 @@ public class LeakViewer extends JFrame implements ActionListener {
         exitItem.addActionListener(this)
         fileMenu.add(exitItem)
 
-        JMenu readingsMenu = new JMenu("Readings")
+        readingsMenu = new JMenu("Readings")
         menuBar.add(readingsMenu)
 
         // Add Reading
@@ -117,6 +124,15 @@ public class LeakViewer extends JFrame implements ActionListener {
         viewMenu = new JMenu("View")
         readingsMenu.add(viewMenu)
         
+        // Zoom
+        zoomMenu = new JMenu("Zoom")
+        defaultZoom = new JMenuItem("Default")
+        defaultZoom.addActionListener(this)
+        fitZoom = new JMenuItem("Zoom to Fit")
+        fitZoom.addActionListener(this)
+        zoomMenu.add(defaultZoom)
+        zoomMenu.add(fitZoom)
+        menuBar.add(zoomMenu)
 
         enableDisable()
 
@@ -129,6 +145,8 @@ public class LeakViewer extends JFrame implements ActionListener {
         addItem.setEnabled(currentProject != null)
         removeMenu.setEnabled(currentProject != null)
         viewMenu.setEnabled(currentProject != null)
+        zoomMenu.setEnabled(currentProject != null)
+        readingsMenu.setEnabled(currentProject != null)
 
         removeMenu.removeAll()
         viewMenu.removeAll()
@@ -167,9 +185,7 @@ public class LeakViewer extends JFrame implements ActionListener {
             if (description != null) {
                 currentProject = new Project(description)
                 
-                LeakChart chart = new LeakChart(currentProject)
-                this.setContentPane(chart)
-                this.pack()
+                showChart()
             }
         } else if (source == openItem) {
             int returnVal = projectChooser.showOpenDialog(this)
@@ -208,6 +224,10 @@ public class LeakViewer extends JFrame implements ActionListener {
                 showChart()
             }
 
+        } else if (source == defaultZoom) {
+            currentChart.zoom(ZoomLevelEnum.DEFAULT)
+        } else if (source == fitZoom) { 
+            currentChart.zoom(ZoomLevelEnum.FIT)
         } else {
             if (source instanceof JMenuItem) {
                 JMenuItem item = (JMenuItem) source
@@ -248,8 +268,8 @@ public class LeakViewer extends JFrame implements ActionListener {
     }
     
     private void showChart() {
-        LeakChart chart = new LeakChart(currentProject)
-        this.setContentPane(chart)
+        currentChart = new LeakChart(currentProject)
+        this.setContentPane(currentChart)
         this.pack()
     }
 
@@ -375,8 +395,8 @@ public class LeakViewer extends JFrame implements ActionListener {
             descriptionPanel.add(descriptionField, BorderLayout.EAST)
             descriptionField.setText(reading.description)
             
+            JPanel datePanel = new JPanel(new BorderLayout())
             if (reading.date != null) {
-                JPanel datePanel = new JPanel(new BorderLayout())
                 datePanel.add(new JLabel("Date:"), BorderLayout.WEST)
                 dateTimeField = new JTextField(20)
                 datePanel.add(dateTimeField, BorderLayout.EAST)
