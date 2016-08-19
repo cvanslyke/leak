@@ -2,6 +2,7 @@ package leak
 
 import groovy.xml.XmlUtil
 
+import java.awt.Color
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 
@@ -215,6 +216,7 @@ class Reading {
     String notes
     Date date
     boolean visible
+    Color color
     
     // ft/sec
     Double changeRate

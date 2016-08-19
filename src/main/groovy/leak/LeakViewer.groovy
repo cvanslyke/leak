@@ -5,11 +5,14 @@ import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener
 import java.text.DateFormat
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 
 import javax.swing.BoxLayout
+import javax.swing.ImageIcon
 import javax.swing.JButton
 import javax.swing.JCheckBox
 import javax.swing.JFileChooser
@@ -22,6 +25,7 @@ import javax.swing.JOptionPane
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
 import javax.swing.JScrollPane
+import javax.swing.JSplitPane
 import javax.swing.JTextArea
 import javax.swing.JTextField
 import javax.swing.SwingUtilities
@@ -55,6 +59,7 @@ public class LeakViewer extends JFrame implements ActionListener {
 
     public LeakViewer() {
         super("Aaron's Leak Detection")
+        
         setLayout(new FlowLayout())
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
         setJMenuBar(createMenuBar())
@@ -230,8 +235,14 @@ public class LeakViewer extends JFrame implements ActionListener {
                 JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE)
             if (panel.isOk() && currentProject != null) {
+                
+                String description = panel.getDescription()
+                if (description == null || description.equals("")) {
+                    description = panel.getFile().getName().replaceFirst(~/\.[^\.]+$/, '')
+                }
+                
                 currentProject.addReading(
-                    panel.getFile(), panel.getDescription(), panel.getDate(), panel.getNotes())
+                    panel.getFile(), description, panel.getDate(), panel.getNotes())
                 showChart()
             }
 
@@ -280,16 +291,57 @@ public class LeakViewer extends JFrame implements ActionListener {
     
     private void showChart() {
         currentChart = new LeakChart(currentProject)
-        this.setContentPane(currentChart)
+        
+        JScrollPane chartPane = new JScrollPane(currentChart)
+        JScrollPane readingsPane = new JScrollPane(createViewPanel(currentProject))
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                chartPane, readingsPane);
+        splitPane.setDividerLocation(750);
+        
+        this.setContentPane(splitPane)
         this.pack()
+    }
+    
+    private JPanel createViewPanel(Project project) {
+        
+        JPanel viewPanel = new JPanel()
+        BoxLayout boxLayout = new BoxLayout(viewPanel, BoxLayout.Y_AXIS)
+        viewPanel.setLayout(boxLayout)
+        
+        for (Reading reading : project.getReadings()) {
+            
+            String description = reading.getDescription()
+            if (description != null && !description.equals("0")
+                && !description.equals(Project.ZERO_LOSS_DESCRIPTION)
+                && !description.equals(Project.NORMAL_EVAPORATION_DESCRIPTION)) {
+                
+                JCheckBox checkBox = new JCheckBox(reading.description, reading.visible)
+                checkBox.addItemListener(new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        JCheckBox cBox = e.getItem()
+                        Reading r = currentProject.getReading(cBox.getText())
+                        r.setVisible(cBox.isSelected())
+                        
+                        showChart()
+                    }
+                });
+                
+                viewPanel.add(checkBox)
+            }
+        }
+        
+        return viewPanel
     }
 
     private static void createAndShowGUI() {
+        
         //Create and set up the window.
         JFrame frame = new LeakViewer()
+        
+        frame.setIconImage(new ImageIcon("/logo.png").getImage());
 
         //Display the window.
-        frame.setPreferredSize(new Dimension(750, 500))
+        frame.setPreferredSize(new Dimension(1000, 500))
         frame.pack();
         frame.setVisible(true);
     }
